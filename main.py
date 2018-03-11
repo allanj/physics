@@ -13,23 +13,19 @@ BATCH_SIZE = 10         # batch size
 SENT_LEN = 20           # length of sentence, length of vector in this case
 NUM_EPOCH = 300         # number of epochs to use
 USE_GPU = False         # if use GPU or not
-NUM_TRAIN = 100         # number of training data to use
-NUM_TEST = 20           # number of test data to use
+NUM_TRAIN = -1         # number of training data to use
+NUM_TEST = 1000          # number of test data to use
 EVAL_K_EPOCH = 2        # evaluate the model in every K epoch
 LEARNING_RATE = 0.001   # learning rate of the adam optimizer
 GRADIENT_NORM = 3       # gradient clipping norm
 TRAIN_INPUT_FILE = "data/discrete/CA_R18_FBC_input_L=20_M=10000.txt"
 TRAIN_OUTPUT_FILE = "data/discrete/CA_R18_FBC_output_L=20_M=10000.txt"
-TEST_INPUT_FILE = "data/discrete/CA_TEST_R18_FBC_input_L=20.txt"
-TEST_OUTPUT_FILE = "data/discrete/CA_TEST_R18_FBC_output_L=20.txt"
+TEST_INPUT_FILE = "data/discrete/CA_R18_FBC_input_L=20_M=10000.txt"
+TEST_OUTPUT_FILE = "data/discrete/CA_R18_FBC_output_L=20_M=10000.txt"
 
 
 def evaluate(model):
     print("[Info] Evaluation on the test set")
-    test_tuples = read_all(TEST_INPUT_FILE, TEST_OUTPUT_FILE, NUM_TEST)
-    # test_tuples = read_data("train.txt", NUM_TEST)
-    test_inputs = prepare_batch_sequence(test_tuples, word_to_ix, 1, USE_GPU, True)
-    test_outputs = prepare_batch_sequence(test_tuples, tag_to_ix, 1, USE_GPU, False)
     corr = 0
     total = 0
     model.batch_size = 1
@@ -68,6 +64,11 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     if USE_GPU:
         model = model.cuda()
+
+    test_tuples = read_all(TEST_INPUT_FILE, TEST_OUTPUT_FILE, NUM_TEST)
+    # test_tuples = read_data("train.txt", NUM_TEST)
+    test_inputs = prepare_batch_sequence(test_tuples, word_to_ix, 1, USE_GPU, True)
+    test_outputs = prepare_batch_sequence(test_tuples, tag_to_ix, 1, USE_GPU, False)
 
     print("[Info] Start training...")
     best_accuracy = 0

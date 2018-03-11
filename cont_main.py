@@ -20,8 +20,8 @@ LEARNING_RATE = 0.001   # learning rate of the adam optimizer
 GRADIENT_NORM = 3       # gradient clipping norm
 TRAIN_INPUT_FILE = "data/continuous/cont_input_L=20_M=50000_m=3_m2=2_g=-0.1_g2=0.5_er=0.0.txt"
 TRAIN_OUTPUT_FILE = "data/continuous/cont_output_L=20_M=50000_m=3_m2=2_g=-0.1_g2=0.5_er=0.0.txt"
-TEST_INPUT_FILE = "data/continuous/cont_input_L=20_M=50000_m=3_m2=2_g=-0.1_g2=0.5_er=0.0.txt"
-TEST_OUTPUT_FILE = "data/continuous/cont_output_L=20_M=50000_m=3_m2=2_g=-0.1_g2=0.5_er=0.0.txt"
+TEST_INPUT_FILE = "data/continuous/cont_test_input_L=20_M=50000_m=3_m2=2_g=-0.1_g2=0.5_er=0.0.txt"
+TEST_OUTPUT_FILE = "data/continuous/cont_test_output_L=20_M=50000_m=3_m2=2_g=-0.1_g2=0.5_er=0.0.txt"
 MAP_VEC = True
 
 
