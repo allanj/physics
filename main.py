@@ -7,24 +7,32 @@ torch.manual_seed(1)
 START_TAG = "<START>"
 STOP_TAG = "<STOP>"
 
-EMBEDDING_DIM = 2 ## dimension of the embedding
-HIDDEN_DIM = 200 ## hidden size
-BATCH_SIZE = 1  ## batch size
-SENT_LEN = 10  ##Length of sentence, length of vector in this case
-NUM_EPOCH = 300 ##number of epochs to use
-USE_GPU = False ## if use GPU or not
-NUM_TRAIN = 100 ## number of training data to use
-NUM_TEST = 100 ##number of test data to use
-EVAL_K_EPOCH = 2 ##evaluate the model in every K epoch
+EMBEDDING_DIM = 25      # dimension of the embedding
+HIDDEN_DIM = 100        # hidden size
+BATCH_SIZE = 10         # batch size
+SENT_LEN = 20           # length of sentence, length of vector in this case
+NUM_EPOCH = 300         # number of epochs to use
+USE_GPU = False         # if use GPU or not
+NUM_TRAIN = 100         # number of training data to use
+NUM_TEST = 20           # number of test data to use
+EVAL_K_EPOCH = 2        # evaluate the model in every K epoch
+LEARNING_RATE = 0.001   # learning rate of the adam optimizer
+GRADIENT_NORM = 3       # gradient clipping norm
+TRAIN_INPUT_FILE = "data/discrete/CA_R18_FBC_input_L=20_M=10000.txt"
+TRAIN_OUTPUT_FILE = "data/discrete/CA_R18_FBC_output_L=20_M=10000.txt"
+TEST_INPUT_FILE = "data/discrete/CA_TEST_R18_FBC_input_L=20.txt"
+TEST_OUTPUT_FILE = "data/discrete/CA_TEST_R18_FBC_output_L=20.txt"
 
 
 def evaluate(model):
     print("[Info] Evaluation on the test set")
-    test_tuples = read_data(test_file, NUM_TEST)
+    test_tuples = read_all(TEST_INPUT_FILE, TEST_OUTPUT_FILE, NUM_TEST)
+    # test_tuples = read_data("train.txt", NUM_TEST)
     test_inputs = prepare_batch_sequence(test_tuples, word_to_ix, 1, USE_GPU, True)
     test_outputs = prepare_batch_sequence(test_tuples, tag_to_ix, 1, USE_GPU, False)
     corr = 0
     total = 0
+    model.batch_size = 1
     for (test_input, test_output) in zip(test_inputs, test_outputs):
         tag_scores = model(test_input)
         _, max_idxs = tag_scores.max(2)
@@ -39,9 +47,8 @@ def evaluate(model):
 
 if __name__ == "__main__":
 
-    train_file = "train.txt"
-    test_file = "train.txt"
-    training_tuples = read_data(train_file, NUM_TRAIN)
+    training_tuples = read_all(TRAIN_INPUT_FILE, TRAIN_OUTPUT_FILE, NUM_TRAIN)
+    # training_tuples = read_data("train.txt", NUM_TRAIN)
 
     word_to_ix = {}
     for sentence, tags in training_tuples:
@@ -52,7 +59,7 @@ if __name__ == "__main__":
 
     training_input = prepare_batch_sequence(training_tuples, word_to_ix, BATCH_SIZE, USE_GPU, True)
     training_output = prepare_batch_sequence(training_tuples, tag_to_ix, BATCH_SIZE, USE_GPU, False)
-
+    print("[Info] Finish reading data.")
     if USE_GPU:
         torch.cuda.set_device(0)
 
@@ -62,21 +69,26 @@ if __name__ == "__main__":
     if USE_GPU:
         model = model.cuda()
 
+    print("[Info] Start training...")
     best_accuracy = 0
     best_model = None
     for epoch in range(NUM_EPOCH):
+        total_loss = 0
         for batch_input, batch_output in zip(training_input, training_output):
             model.batch_size = len(batch_input)
             model.zero_grad()
             tag_scores = model(batch_input)
             loss = loss_function(tag_scores.view(-1, len(tag_to_ix)), batch_output.view(-1))
             #         print(loss.data[0])
+            total_loss += loss.data[0]
             loss.backward()
+            torch.nn.utils.clip_grad_norm(model.parameters(), GRADIENT_NORM, norm_type=2)
             optimizer.step()
-        print("Epoch ", epoch, " Loss: ", loss.data[0])
+        print("Epoch ", epoch, " Loss: ", total_loss)
         if (epoch + 1) % EVAL_K_EPOCH == 0:
             curr_accuracy = evaluate(model)
             if curr_accuracy > best_accuracy:
                 best_accuracy = curr_accuracy
 
     evaluate(model)
+    print("best accuracy: ", best_accuracy)
