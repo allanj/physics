@@ -1,29 +1,33 @@
 import torch
 import torch.autograd as autograd
 
-def to_scalar(var):
-    # returns a python float
-    return var.view(-1).data.tolist()[0]
 
+def prepare_batch_sequence(seqs, to_ix, batch_size, use_gpu, is_input):
+    total = len(seqs)
+    num_batches = total // batch_size
+    last_batch_size = batch_size
+    if total - batch_size * num_batches > 0:
+        last_batch_size = total - batch_size * num_batches
+        num_batches += 1
+    elif total - batch_size * num_batches < 0:
+        raise Exception("shouldn't happen")
+    # print("num_batches: ", num_batches)
+    batches =[]
+    for b in range(num_batches):
+        batch_idxs = []
+        curr_b_size = last_batch_size if b == num_batches - 1 else batch_size
+        for i in range(curr_b_size):
+            sidx = b * batch_size + i
+            seq = seqs[sidx]
+            curr_sent = seq[0] if is_input else seq[1]
+            idxs = [to_ix[w] for w in curr_sent]
+            batch_idxs.append(idxs)
+        tensor = torch.LongTensor(batch_idxs)
+        if use_gpu:
+            tensor = tensor.cuda()
+        batches.append(autograd.Variable(tensor))
+    return batches
 
-def argmax(vec):
-    # return the argmax as a python int
-    _, idx = torch.max(vec, 1)
-    return to_scalar(idx)
-
-
-def prepare_sequence(seq, to_ix):
-    idxs = [to_ix[w] for w in seq]
-    tensor = torch.LongTensor(idxs)
-    return autograd.Variable(tensor)
-
-
-# Compute log sum exp in a numerically stable way for the forward algorithm
-def log_sum_exp(vec):
-    max_score = vec[0, argmax(vec)]
-    max_score_broadcast = max_score.view(1, -1).expand(1, vec.size()[1])
-    return max_score + \
-        torch.log(torch.sum(torch.exp(vec - max_score_broadcast)))
 
 
 
